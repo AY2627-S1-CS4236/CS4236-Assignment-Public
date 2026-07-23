@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  task3-server:
+    build: .
+    container_name: task3_server
+    ports:
+      - "9003:9003"
+    restart: always

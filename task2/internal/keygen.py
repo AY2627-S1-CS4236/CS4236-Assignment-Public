@@ -1,19 +1,12 @@
-# keygen.py
+# keygen.py - Key seed generator for Task 2
 
 import argparse
-import os
 from pathlib import Path
+import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-def generate_key(output_path: str | Path, size: int = 4096) -> Path:
-    """
-    Generate random key material and write it to the specified output file.
-    """
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    key_bytes = os.urandom(size)
-    path.write_bytes(key_bytes)
-    return path
+from common.keygen import generate_key, load_key_file
 
 
 def main() -> None:
@@ -30,8 +23,8 @@ def main() -> None:
         "--size",
         "-s",
         type=int,
-        default=4096,
-        help="Size of key material in bytes (default: 4096)",
+        default=16,
+        help="Size of key seed in bytes (default: 16)",
     )
 
     args = parser.parse_args()

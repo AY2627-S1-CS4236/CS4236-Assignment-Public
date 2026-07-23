@@ -1,8 +1,5 @@
 # otp.py
 
-from pathlib import Path
-
-
 def xor_bytes(a: bytes, b: bytes) -> bytes:
     """
     XOR two byte strings of equal length.
@@ -56,38 +53,3 @@ def decrypt(pad: bytes, ciphertext: bytes, offset: int = 0) -> bytes:
         raise TypeError("decrypt expects bytes")
 
     return xor_bytes_cyclic(ciphertext, pad, offset=offset)
-
-
-def load_key_file(key_file: str | Path) -> bytes:
-    """
-    Load OTP key material from a file.
-    """
-    path = Path(key_file)
-
-    if not path.exists():
-        raise FileNotFoundError(f"key file does not exist: {path}")
-
-    key = path.read_bytes()
-
-    if len(key) < 2:
-        raise ValueError("key file must contain at least 2 bytes")
-
-    return key
-
-
-def split_key(key: bytes) -> tuple[bytes, bytes]:
-    """
-    Split key material into two independent pads.
-
-    First half:  client -> server
-    Second half: server -> client
-    """
-    if len(key) < 2:
-        raise ValueError("key must contain at least 2 bytes")
-
-    midpoint = len(key) // 2
-
-    client_to_server_pad = key[:midpoint]
-    server_to_client_pad = key[midpoint:]
-
-    return client_to_server_pad, server_to_client_pad
