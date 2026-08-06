@@ -1,9 +1,0 @@
-version: '3.8'
-
-services:
-  task4-server:
-    build: .
-    container_name: task4_server
-    ports:
-      - "9004:9004"
-    restart: always
