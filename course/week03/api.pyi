@@ -1,9 +1,0 @@
-# Module: educrypto.symmetric.otp
-
-def encrypt(pad: bytes, plaintext: bytes) -> bytes: ...
-def decrypt(pad: bytes, ciphertext: bytes) -> bytes: ...
-
-# Module created by the student: attacks.week03_keystream_reuse
-
-def solve(host: str, port: int) -> bytes: ...
-

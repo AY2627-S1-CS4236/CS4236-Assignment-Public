@@ -1,108 +1,86 @@
-# CS4236 cumulative cryptography library
+# CS4236 cryptography library — course material
 
-Each student or team keeps one repository for the semester. Students create and
-own the cryptographic library and attack implementations. The instructor adds
-only specifications, public tests, and vulnerable challenge applications.
+This instructor repository publishes the material for each weekly assignment:
 
-## Repository ownership
+1. The library API and behavioral requirements.
+2. Public feedback tests.
+3. Vulnerable services and an attack exercise.
 
-You may freely modify:
+Implement the required `educrypto` modules in your own library repository.
+Do not add your library implementation to this course-material repository.
 
-- src/
-- attacks/
-- PROGRESS.md
+After each lecture, the corresponding `course/weekXX` folder will be released.
+The exact contents may vary.
 
-Do not modify:
-
-- course/
-- .github/
-
-New weekly material is delivered as a new course/weekXX/ directory. Weekly
-updates never add or modify files under src/ or attacks/, so they should merge
-without conflicting with student implementations.
-
-## Layout
+## Weekly folder structure
 
 ~~~text
-pyproject.toml
-
-src/
-  educrypto/
-    __init__.py          Student-owned library package
-
-attacks/
-  README.md              Student-owned attack modules are created here
-
-course/
+course/weekXX/
   README.md
-  week01/
-    README.md            Instructor-owned specification
-    api.pyi              API description only
-    test_*.py            Public tests
-  weekXX/
-    challenge/           Instructor-owned vulnerable application, when needed
-
-.github/workflows/
-  public-tests.yml       Cumulative public feedback
-
-PROGRESS_TEMPLATE.md
+  api.pyi
+  test_weekXX.py
+  challenge/                 # Present only when the week has a challenge
+    README.md
+    requirements.txt         # Present when extra dependencies are needed
+    server.py
+    application.py           # Names and internal structure may vary
 ~~~
 
-No implementation stubs are released. A weekly specification tells students
-which module to create, for example:
+Each file has a different role:
 
-~~~text
-src/educrypto/number_theory.py
-~~~
+| Path | Purpose |
+| --- | --- |
+| `course/weekXX/README.md` | The main specification for that week. It describes the required modules, function behavior, edge cases, workflow, and test commands. Start here. |
+| `course/weekXX/api.pyi` | A compact declaration of the public Python API: module names, function names, parameter types, and return types. It is an interface reference, not an implementation file. Create matching `.py` modules in your own library. |
+| `course/weekXX/test_weekXX.py` | Public pytest feedback for the week's API. If there is a challenge, its solver test is marked `attack`; other challenge implementation details are not part of the public API tests. |
+| `course/weekXX/challenge/README.md` | The challenge scenario, setup instructions, and required attack entry point. Read it before running or reviewing the service. |
+| `course/weekXX/challenge/requirements.txt` | Extra packages required to run that challenge. Install these into the same Python environment used for your library and pytest. |
+| `course/weekXX/challenge/server.py` | The command-line entry point for the vulnerable service. Tests may also use helpers from this file to start a temporary local server. |
+| Other files under `challenge/` | The service implementation and any browser assets. Review these files to understand the application and find the vulnerability; they are not APIs that you need to reproduce in your library. |
 
-Tests import the requested module inside test functions. A missing new module
-therefore fails that week's tests without preventing pytest from collecting the
-earlier weeks.
+The weekly README is the full behavioral specification. The `.pyi` file is a
+quick signature reference, and the tests provide feedback on selected required
+behavior. Passing only the visible examples should not replace implementing the
+complete written specification.
 
-## Setup
+## Recommended workflow
 
-~~~bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[test]'
-~~~
+For each released week:
 
-On Windows, activate with:
+1. Read `course/weekXX/README.md` and `course/weekXX/api.pyi`.
+2. Create the specified modules under `src/educrypto/` in your library
+   repository.
+3. Run the non-attack tests and finish the library API first.
+4. If the week contains `challenge/`, follow its README, review the service,
+   and implement the specified `educrypto.attacks.weekXX` entry point.
+5. Run the attack test, then run the complete weekly test suite.
 
-~~~powershell
-.venv\Scripts\activate
-~~~
+Challenge services may import the library API from the same week. An incomplete
+library implementation can therefore prevent the service or attack test from
+running correctly.
+
+## Testing
 
 Run every released public test:
 
 ~~~bash
-python -m pytest -q course
+python3 -m pytest -q course -s
 ~~~
 
-Or separate ordinary library feedback from attack feedback:
+Run one week, replacing `weekXX` with the released week number:
 
 ~~~bash
-python -m pytest -q course -m "not attack"
-python -m pytest -q course -m "attack"
+python3 -m pytest -q course/weekXX -s
 ~~~
 
-Tests are feedback rather than a correctness-based grade. Effort is evidenced
-by implementation attempts, commit history, test runs recorded in PROGRESS.md,
-and short reflections.
+Run ordinary library feedback without attack tests:
 
-## Planned progression
+~~~bash
+python3 -m pytest -q course -m "not attack" -s
+~~~
 
-| Week | Student library work | Application misuse / attack |
-|---:|---|---|
-| 1 | Integer encoding and XOR | — |
-| 2 | Extended GCD and modular inverses | — |
-| 3 | Strict one-time-pad functions | Reused pad recovers a secret |
-| 4 | PKCS#7 padding and AES-ECB | Observe deterministic equal blocks |
-| 5 | AES-CBC | Padding-oracle plaintext recovery |
+Run only challenge attack tests:
 
-Later weeks can add CTR nonce reuse, hashes and length extension, textbook RSA,
-or repeated signature nonces using exactly the same ownership model.
-
-See [course/README.md](course/README.md) for the weekly contract and
-[INSTRUCTOR_NOTES.md](INSTRUCTOR_NOTES.md) for distribution guidance.
-
+~~~bash
+python3 -m pytest -q course -m "attack" -s
+~~~

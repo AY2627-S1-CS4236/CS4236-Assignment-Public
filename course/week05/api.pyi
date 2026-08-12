@@ -1,9 +1,0 @@
-# Module: educrypto.symmetric.cbc
-
-def encrypt(key: bytes, iv: bytes, plaintext: bytes) -> bytes: ...
-def decrypt(key: bytes, iv: bytes, ciphertext: bytes) -> bytes: ...
-
-# Module created by the student: attacks.week05_padding_oracle
-
-def solve(host: str, port: int) -> bytes: ...
-
