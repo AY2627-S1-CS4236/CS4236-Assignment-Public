@@ -34,7 +34,36 @@ Then open `http://127.0.0.1:8000`.
 Before running the server, make sure you have implemented the library APIs for
 this week.
 
-## HTTP and byte helpers
+## Testing
+
+From the course-material repository root, run the attack test with:
+
+~~~bash
+python3 -m pytest -q course/week01 -m "attack"
+~~~
+
+The server started manually on port 8000 is only for your own exploration. When
+the attack test runs, pytest creates a separate temporary SeedSafe service on
+an automatically selected available port. It does not send requests to an
+existing service on port 8000. The test passes the temporary service's complete
+URL to `solve(base_url)` and shuts that service down after the test finishes.
+
+Therefore, do not hard-code a hostname or port in the attack implementation.
+Build every request URL from the `base_url` argument supplied to `solve`.
+
+## Tips and helpers
+
+When SeedSafe starts, it encrypts the application's secret and stores the
+result as a backup record. The goal of `solve` is to recover that startup
+secret and return its exact value.
+
+Start your code review with `service.py`. It contains the main backup and
+encryption logic and shows where the Week 1 `educrypto.otp` module is loaded and
+used. Follow the secret through that code, then inspect the HTTP application
+and browser code to understand which encrypted data and operations are exposed
+to a client.
+
+### HTTP Requests
 
 Your `solve` function needs to communicate with the running HTTP service. The
 third-party [Requests](https://requests.readthedocs.io/) package provides a
@@ -89,20 +118,3 @@ Inspect `static/app.js` and the Python service files to determine which routes,
 request bodies, and response fields are available. The attack test supplies a
 `base_url`, often with a random port, so `solve` must use that argument instead
 of assuming `http://127.0.0.1:8000`.
-
-## Testing
-
-From the course-material repository root, run the attack test with:
-
-~~~bash
-python3 -m pytest -q course/week01 -m "attack"
-~~~
-
-The server started manually on port 8000 is only for your own exploration. When
-the attack test runs, pytest creates a separate temporary SeedSafe service on
-an automatically selected available port. It does not send requests to an
-existing service on port 8000. The test passes the temporary service's complete
-URL to `solve(base_url)` and shuts that service down after the test finishes.
-
-Therefore, do not hard-code a hostname or port in the attack implementation.
-Build every request URL from the `base_url` argument supplied to `solve`.
