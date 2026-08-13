@@ -29,6 +29,13 @@ Start the service:
 SECRET='replace-me' python3 server.py
 ~~~
 
+On Windows, start with:
+
+~~~powershell
+$env:SECRET = "abc123"
+python3 server.py
+~~~
+
 Then open `http://127.0.0.1:8000`.
 
 Before running the server, make sure you have implemented the library APIs for
