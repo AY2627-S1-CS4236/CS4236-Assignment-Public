@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="SeedSafe stores encrypted backups without keeping your recovery seed."
+    >
+    <title>SeedSafe — Encrypted backups, held by you</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="SeedSafe home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="brand-name">SeedSafe</span>
+        </a>
+
+        <nav aria-label="Primary navigation">
+          <a href="#archive">Public archive</a>
+          <a href="#restore">Restore</a>
+        </nav>
+
+        <div class="service-state" id="service-state" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="service-label">Connecting</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="page-title">
+          <div class="hero-copy">
+            <p class="eyebrow">Private by design · Open by default</p>
+            <h1 id="page-title">Backups only<br><em>you can open.</em></h1>
+            <p class="hero-description">
+              SeedSafe encrypts every note with a unique recovery seed. We give
+              the seed to you once and never keep a copy—so your backup stays
+              yours, even while its encrypted record remains publicly auditable.
+            </p>
+            <div class="trust-row" aria-label="SeedSafe service promises">
+              <span>No accounts</span>
+              <span>No stored seeds</span>
+              <span>Publicly auditable</span>
+            </div>
+          </div>
+
+          <article class="create-card" aria-labelledby="create-title">
+            <div class="card-heading">
+              <div>
+                <p class="section-label">New encrypted backup</p>
+                <h2 id="create-title">Store a note</h2>
+              </div>
+              <span class="step-number">01</span>
+            </div>
+
+            <form id="backup-form" novalidate>
+              <label for="backup-text">Text to protect</label>
+              <textarea
+                id="backup-text"
+                rows="7"
+                placeholder="Paste a note, recovery detail, or important message…"
+                spellcheck="true"
+                aria-describedby="backup-help backup-message"
+              ></textarea>
+              <div class="field-meta">
+                <p id="backup-help">Encrypted before it enters the public archive.</p>
+                <span id="character-count">0 characters</span>
+              </div>
+              <p class="form-message" id="backup-message" role="status" aria-live="polite"></p>
+              <button class="primary-button" id="backup-submit" type="submit">
+                <span>Encrypt &amp; store</span>
+                <span aria-hidden="true">↗</span>
+              </button>
+            </form>
+          </article>
+        </section>
+
+        <section class="seed-result" id="seed-result" aria-labelledby="seed-title" hidden>
+          <div class="seed-result-copy">
+            <p class="section-label">Your one-time recovery seed</p>
+            <h2 id="seed-title">Save this somewhere safe.</h2>
+            <p>SeedSafe does not retain this seed. You will need it to restore the backup.</p>
+          </div>
+          <div class="seed-values">
+            <div>
+              <span>Recovery seed</span>
+              <code id="created-seed"></code>
+              <button class="copy-button" id="copy-seed" type="button">Copy seed</button>
+            </div>
+            <div>
+              <span>Record ID</span>
+              <code id="created-record-id"></code>
+              <button class="copy-button" id="copy-record-id" type="button">Copy ID</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="archive-section" id="archive" aria-labelledby="archive-title">
+          <div class="section-heading">
+            <div>
+              <p class="section-label">Transparent storage</p>
+              <h2 id="archive-title">The public archive</h2>
+              <p>
+                Every encrypted record is visible for independent verification.
+                Without its recovery seed, the content remains perfectly private.
+              </p>
+            </div>
+            <button class="refresh-button" id="refresh-button" type="button">
+              <span aria-hidden="true">↻</span>
+              Refresh archive
+            </button>
+          </div>
+
+          <div class="archive-status" id="archive-status" role="status" aria-live="polite">
+            Loading encrypted records…
+          </div>
+          <div class="archive-list" id="archive-list"></div>
+        </section>
+
+        <section class="restore-section" id="restore" aria-labelledby="restore-title">
+          <div class="restore-intro">
+            <p class="section-label">Recovery desk</p>
+            <h2 id="restore-title">Open your backup.</h2>
+            <p>
+              Pair a public record with the seed you saved. The seed is used for
+              this request only and is never added to our records.
+            </p>
+            <ol class="restore-steps">
+              <li><span>1</span>Choose a record from the archive</li>
+              <li><span>2</span>Enter its 32-character recovery seed</li>
+              <li><span>3</span>Restore the original text</li>
+            </ol>
+          </div>
+
+          <article class="restore-card">
+            <form id="restore-form" novalidate>
+              <label for="restore-record-id">Record ID</label>
+              <input
+                id="restore-record-id"
+                type="text"
+                autocomplete="off"
+                placeholder="backup_…"
+              >
+
+              <label for="restore-seed">Recovery seed</label>
+              <input
+                id="restore-seed"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                maxlength="32"
+                placeholder="32 hexadecimal characters"
+              >
+
+              <p class="form-message" id="restore-message" role="status" aria-live="polite"></p>
+              <button class="primary-button light-button" id="restore-submit" type="submit">
+                <span>Restore backup</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </form>
+
+            <div class="restored-output" id="restored-output" hidden>
+              <div>
+                <span>Restored text</span>
+                <button class="copy-button" id="copy-restored" type="button">Copy text</button>
+              </div>
+              <pre id="restored-text"></pre>
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <footer>
+        <a class="brand footer-brand" href="/">
+          <span class="brand-mark small" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="brand-name">SeedSafe</span>
+        </a>
+        <p>Your seed. Your backup. Your privacy.</p>
+        <span>SPN-128-ECB · Week 02</span>
+      </footer>
+    </div>
+  </body>
+</html>
