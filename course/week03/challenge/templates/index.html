@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="A restricted chosen-plaintext security game presented as a Player and Server exchange."
+    >
+    <title>R-CPA Security Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="R-CPA game home">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span>
+          <strong>R-CPA Game</strong>
+          <small>Restricted chosen-plaintext experiment</small>
+        </span>
+      </a>
+
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Week 03 · Security game</p>
+          <h1 id="page-title">Follow the R-CPA experiment.</h1>
+          <p>
+            You are the Player. The Server holds the key, answers encryption
+            queries, and encrypts one of your two challenge messages.
+          </p>
+        </div>
+        <aside class="game-state" aria-label="Current game">
+          <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+          <div>
+            <small id="connection-label">Connecting</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">Cipher suite pending</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="restriction" aria-labelledby="restriction-title">
+        <div class="restriction-symbol" aria-hidden="true">≠</div>
+        <div>
+          <h2 id="restriction-title">The restriction</h2>
+          <p>
+            An exact message may be used by the oracle or as a challenge candidate,
+            never both within the current game. A guess or reset starts a fresh
+            game with empty restriction history. Related messages and shared
+            prefixes are allowed.
+          </p>
+        </div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="run-score" aria-label="Consecutive wins">
+          <span>Current streak</span>
+          <strong><span id="wins">0</span><small> / <span id="wins-required">30</span></small></strong>
+        </div>
+        <div class="run-progress">
+          <h2 id="run-title">Reach 30 consecutive correct guesses</h2>
+          <p>Every guess starts a fresh-key, fresh-IV game. Only a wrong guess resets this streak.</p>
+          <div class="progress-track" aria-hidden="true">
+            <div id="progress-fill"></div>
+          </div>
+        </div>
+        <button class="reset-button" id="reset-button" type="button" disabled>
+          Reset game
+          <small>Generate a new key and IV · keep the current streak</small>
+        </button>
+      </section>
+
+      <p class="status-message" id="status-message" role="status" aria-live="polite">
+        Starting a new game…
+      </p>
+
+      <section class="instance-boundary" aria-labelledby="instance-title">
+        <div class="instance-icon" aria-hidden="true">K</div>
+        <div>
+          <p class="eyebrow">Current cryptographic instance · not a protocol step</p>
+          <h2 id="instance-title">One key and one IV for the current game</h2>
+          <p>
+            The Server samples <code>K</code> and <code>IV</code> once. Every
+            pre-challenge query, challenge encryption, and post-challenge query
+            uses those same values. A fresh pair is generated after every guess
+            or when you press <strong>Reset game</strong>.
+          </p>
+        </div>
+        <div class="instance-formula" aria-label="Key and IV lifetime">
+          <span><i>K</i> ← random</span>
+          <span><i>IV</i> ← random</span>
+          <b>fixed for this game</b>
+        </div>
+      </section>
+
+      <section class="protocol" aria-label="R-CPA protocol diagram">
+        <div class="actors" aria-hidden="true">
+          <div><span>P</span><strong>Player</strong><small>You choose the messages</small></div>
+          <div></div>
+          <div><span>S</span><strong>Server</strong><small>Holds the secret key</small></div>
+        </div>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">1</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Pre-challenge oracle</span>
+            <h2>Query any number of messages</h2>
+            <label for="oracle-message">Message <i>Q</i> · hexadecimal bytes</label>
+            <textarea id="oracle-message" rows="4" spellcheck="false" aria-describedby="oracle-help"></textarea>
+            <div class="field-meta">
+              <span id="oracle-help">Successful queries cannot become challenge candidates.</span>
+              <span><b id="oracle-count">0</b> bytes</span>
+            </div>
+            <button class="primary-button" id="oracle-button" type="button" disabled>
+              Query encryption oracle <span aria-hidden="true">→</span>
+            </button>
+            <div class="cipher-result" id="oracle-result" hidden>
+              <span>Oracle encryption response</span>
+              <div class="output-part">
+                <b>IV</b>
+                <code id="oracle-iv-output"></code>
+              </div>
+              <div class="output-part output-ciphertext">
+                <b>C</b>
+                <div id="oracle-output" class="cipher-groups"></div>
+              </div>
+            </div>
+          </section>
+          <div class="flow request-flow" aria-hidden="true">
+            <span>Q</span><b>→</b>
+            <span>IV, C</span><b>←</b>
+          </div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Oracle response</span>
+            <h2>Encrypt under the instance key</h2>
+            <div class="formula">C ← Encrypt<sub>K, IV</sub>(Q)</div>
+            <p id="oracle-server-status">Waiting for pre-challenge oracle queries.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">2</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Challenge</span>
+            <h2>Choose two candidates</h2>
+            <div class="candidate-fields">
+              <div>
+                <label for="left-message">Message <i>M<sub>0</sub></i></label>
+                <textarea id="left-message" rows="4" spellcheck="false"></textarea>
+                <span><b id="left-count">0</b> bytes</span>
+              </div>
+              <div>
+                <label for="right-message">Message <i>M<sub>1</sub></i></label>
+                <textarea id="right-message" rows="4" spellcheck="false"></textarea>
+                <span><b id="right-count">0</b> bytes</span>
+              </div>
+            </div>
+            <p class="field-help">Candidates must be distinct, equal-length, and unused by the oracle.</p>
+            <button class="primary-button" id="challenge-button" type="button" disabled>
+              Submit challenge <span aria-hidden="true">→</span>
+            </button>
+            <div class="cipher-result" id="challenge-result" hidden>
+              <span>Challenge encryption response</span>
+              <div class="output-part">
+                <b>IV</b>
+                <code id="challenge-iv-output"></code>
+              </div>
+              <div class="output-part output-ciphertext">
+                <b>C*</b>
+                <div id="challenge-output" class="cipher-groups"></div>
+              </div>
+            </div>
+          </section>
+          <div class="flow request-flow" aria-hidden="true">
+            <span>M<sub>0</sub>, M<sub>1</sub></span><b>→</b>
+            <span>IV, C*</span><b>←</b>
+          </div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Hidden choice</span>
+            <h2>Sample one secret bit</h2>
+            <div class="formula">b ← {0, 1}<br>C* ← Encrypt<sub>K, IV</sub>(M<sub>b</sub>)</div>
+            <p id="challenge-server-status">Waiting for two challenge candidates.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">3</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Post-challenge oracle</span>
+            <h2>Keep querying after C*</h2>
+            <p>
+              The same oracle remains available after the challenge ciphertext.
+              Exact challenge messages are rejected, but related messages are allowed.
+            </p>
+            <label for="post-oracle-message">Message <i>Q′</i> · hexadecimal bytes</label>
+            <textarea id="post-oracle-message" rows="4" spellcheck="false" aria-describedby="post-oracle-help"></textarea>
+            <div class="field-meta">
+              <span id="post-oracle-help">You may submit any number of post-challenge queries before guessing.</span>
+              <span><b id="post-oracle-count">0</b> bytes</span>
+            </div>
+            <button class="primary-button" id="post-oracle-button" type="button" disabled>
+              Query encryption oracle <span aria-hidden="true">→</span>
+            </button>
+            <div class="cipher-result" id="post-oracle-result" hidden>
+              <span>Post-challenge oracle response</span>
+              <div class="output-part">
+                <b>IV</b>
+                <code id="post-oracle-iv-output"></code>
+              </div>
+              <div class="output-part output-ciphertext">
+                <b>C</b>
+                <div id="post-oracle-output" class="cipher-groups"></div>
+              </div>
+            </div>
+          </section>
+          <div class="flow request-flow" aria-hidden="true">
+            <span>Q′</span><b>→</b>
+            <span>IV, C</span><b>←</b>
+          </div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Same oracle</span>
+            <h2>Continue under K and IV</h2>
+            <div class="formula">C ← Encrypt<sub>K, IV</sub>(Q′)</div>
+            <p id="post-oracle-server-status">This phase opens after the challenge ciphertext is returned.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">4</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Decision</span>
+            <h2>Guess the hidden bit</h2>
+            <p>Which candidate produced the challenge ciphertext?</p>
+            <div class="guess-buttons">
+              <button class="guess-button" data-guess="0" type="button" disabled>
+                <b>0</b> Guess M<sub>0</sub>
+              </button>
+              <button class="guess-button" data-guess="1" type="button" disabled>
+                <b>1</b> Guess M<sub>1</sub>
+              </button>
+            </div>
+          </section>
+          <div class="flow single-flow" aria-hidden="true">
+            <span>b′</span>
+            <b>→</b>
+          </div>
+          <section class="node server-node compact-node result-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Result</span>
+            <h2>Compare b′ with b</h2>
+            <div class="result-indicator" id="result-indicator">Awaiting a guess</div>
+            <p>Every guess ends this game and starts a new one with a fresh key and IV. A wrong guess also returns the streak to zero.</p>
+          </section>
+        </article>
+      </section>
+
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span>30 / 30</span>
+        <div>
+          <h2 id="victory-title">Experiment complete</h2>
+          <p>The server revealed its startup secret.</p>
+        </div>
+        <code id="secret-output"></code>
+      </section>
+    </main>
+
+    <footer>
+      <span>CS4236 · Week 03</span>
+      <span>R-CPA: unlimited oracle queries before and after the challenge</span>
+    </footer>
+  </body>
+</html>
