@@ -17,6 +17,7 @@ WINS_REQUIRED = 30
 MAX_MESSAGE_BYTES = 4096
 SUITE_NAME = "spn-cbc-v1"
 
+# AES SBOX
 SBOX = bytes.fromhex(
     """
     63 7c 77 7b f2 6b 6f c5 30 01 67 2b fe d7 ab 76
