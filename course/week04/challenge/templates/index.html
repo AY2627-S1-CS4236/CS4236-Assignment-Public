@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="An EUF-CMA message-authentication game presented as a Player and Server exchange."
+    >
+    <title>EUF-CMA Forgery Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="EUF-CMA game home">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>
+          <strong>EUF-CMA Game</strong>
+          <small>Message authentication experiment</small>
+        </span>
+      </a>
+      <span class="week-label">CS4236 · Week 04</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Week 04 · Security game</p>
+          <h1 id="page-title">Forge what the Server never tagged.</h1>
+          <p>
+            You are the Player. Ask for tags on messages of your choice, then
+            produce a valid tag for one fresh message.
+          </p>
+        </div>
+        <aside class="game-state" aria-label="Current game">
+          <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+          <div>
+            <small id="connection-label">Connecting</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">MAC suite pending</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="restriction" aria-labelledby="restriction-title">
+        <div class="restriction-symbol" aria-hidden="true">✦</div>
+        <div>
+          <h2 id="restriction-title">The freshness rule</h2>
+          <p>
+            Your forged message must not exactly match any message submitted
+            to the oracle under the current key. Related messages and shared
+            blocks are allowed.
+          </p>
+        </div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="run-score" aria-label="Forgery objective progress">
+          <span>Objective</span>
+          <strong><span id="wins">0</span><small> / <span id="wins-required">1</span></small></strong>
+        </div>
+        <div class="run-progress">
+          <h2 id="run-title">Produce one valid fresh-message forgery</h2>
+          <p>A failed attempt starts another game with a fresh key and empty oracle history.</p>
+          <div class="progress-track" aria-hidden="true">
+            <div id="progress-fill"></div>
+          </div>
+        </div>
+        <button class="reset-button" id="reset-button" type="button" disabled>
+          Reset game
+          <small>Generate a new key · clear the oracle history</small>
+        </button>
+      </section>
+
+      <p class="status-message" id="status-message" role="status" aria-live="polite">
+        Starting a new game…
+      </p>
+
+      <section class="instance-boundary" aria-labelledby="instance-title">
+        <div class="instance-icon" aria-hidden="true">K</div>
+        <div>
+          <p class="eyebrow">Current cryptographic instance · not a protocol step</p>
+          <h2 id="instance-title">One secret key for this game instance</h2>
+          <p>
+            Every oracle query and your forgery attempt uses the same key.
+            Submitting a forgery or resetting creates a fresh key and clears
+            the oracle history.
+          </p>
+        </div>
+        <div class="instance-formula" aria-label="Key lifetime">
+          <span><i>K</i> ← random</span>
+          <span>Tag ← C<sub>last−1</sub> ∥ C<sub>last</sub></span>
+          <b>fixed for this instance</b>
+        </div>
+      </section>
+
+      <section class="protocol" aria-label="EUF-CMA protocol diagram">
+        <div class="actors" aria-hidden="true">
+          <div><span>P</span><strong>Player</strong><small>You choose the messages</small></div>
+          <div></div>
+          <div><span>S</span><strong>Server</strong><small>Holds the secret key</small></div>
+        </div>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">1</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Authentication oracle</span>
+            <h2>Request as many tags as you need</h2>
+            <label for="oracle-message">Message <i>Q</i> · hexadecimal bytes</label>
+            <textarea id="oracle-message" rows="5" spellcheck="false" aria-describedby="oracle-help"></textarea>
+            <div class="field-meta">
+              <span id="oracle-help">Empty messages are valid. Maximum length: 4096 bytes.</span>
+              <span><b id="oracle-count">0</b> bytes</span>
+            </div>
+            <button class="primary-button" id="oracle-button" type="button" disabled>
+              Query tag oracle <span aria-hidden="true">→</span>
+            </button>
+            <div class="tag-result" id="oracle-result" hidden>
+              <span>Oracle tag · two exposed CBC blocks</span>
+              <div id="oracle-output" class="tag-groups"></div>
+            </div>
+          </section>
+          <div class="flow request-flow" aria-hidden="true">
+            <span>Q</span><b>→</b>
+            <span>Tag<sub>K</sub>(Q)</span><b>←</b>
+          </div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Oracle response</span>
+            <h2>Authenticate under K</h2>
+            <div class="formula">T ← C<sub>n−1</sub> ∥ C<sub>n</sub></div>
+            <p id="oracle-server-status">Waiting for an oracle query.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">2</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Forgery</span>
+            <h2>Submit one fresh message and tag</h2>
+            <label for="forge-message">Fresh message <i>M*</i> · hexadecimal bytes</label>
+            <textarea id="forge-message" rows="5" spellcheck="false" aria-describedby="forge-help"></textarea>
+            <div class="field-meta">
+              <span id="forge-help">This exact message must not have been queried this round.</span>
+              <span><b id="forge-count">0</b> bytes</span>
+            </div>
+            <label for="forge-tag">Proposed tag <i>T*</i> · exactly 32 bytes</label>
+            <textarea id="forge-tag" rows="3" spellcheck="false" aria-describedby="tag-help"></textarea>
+            <div class="field-meta">
+              <span id="tag-help">Enter the two 16-byte blocks as hexadecimal.</span>
+              <span><b id="tag-count">0</b> / 32 bytes</span>
+            </div>
+            <button class="primary-button forge-button" id="forge-button" type="button" disabled>
+              Submit forgery <span aria-hidden="true">→</span>
+            </button>
+          </section>
+          <div class="flow single-flow" aria-hidden="true">
+            <span>M*, T*</span><b>→</b>
+          </div>
+          <section class="node server-node compact-node result-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Verification</span>
+            <h2>Check validity and freshness</h2>
+            <div class="result-indicator" id="result-indicator">Awaiting a forgery</div>
+            <p id="forge-server-status">
+              A failed, well-formed attempt starts a fresh-key game instance.
+            </p>
+          </section>
+        </article>
+      </section>
+
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span>1 / 1</span>
+        <div>
+          <h2 id="victory-title">Forgery experiment complete</h2>
+          <p>The Server revealed its startup secret.</p>
+        </div>
+        <code id="secret-output"></code>
+      </section>
+    </main>
+
+    <footer>
+      <span>CS4236 · Week 04</span>
+      <span>EUF-CMA: chosen-message queries, one fresh-message forgery</span>
+    </footer>
+  </body>
+</html>
