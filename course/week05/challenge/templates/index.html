@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Break two fixed-key SPN sponge hashes and reveal the Server secret.">
+    <title>Two Sponge Collision Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Sponge collision game home">
+        <span class="brand-mark" aria-hidden="true">H</span>
+        <span><strong>Two Sponge Collision Game</strong><small>Hashing experiment</small></span>
+      </a>
+      <span class="week-label">CS4236 · Week 05</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Week 05 · Collision game</p>
+          <h1 id="page-title">Break both hashes.<br>Reveal the secret.</h1>
+          <p>Find a collision for each sponge configuration. The Server reveals
+            its startup secret after both targets are solved.</p>
+        </div>
+        <aside class="game-state" aria-label="Current game">
+          <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+          <div>
+            <small id="connection-label">Connecting</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">Hash suite pending</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="restriction" aria-labelledby="restriction-title">
+        <div class="restriction-symbol" aria-hidden="true">≠</div>
+        <div>
+          <h2 id="restriction-title">Two complete collisions</h2>
+          <p>For each target, the decoded messages must differ and every digest byte
+            must match. Either target may be solved first.</p>
+        </div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="run-score" aria-label="Collision objective progress">
+          <span>Targets solved</span>
+          <strong><span id="wins">0</span><small> / <span id="wins-required">2</span></small></strong>
+        </div>
+        <div class="run-progress">
+          <h2 id="run-title">Solve both collision targets</h2>
+          <p>Failed attempts keep all progress. Reset starts a fresh game.</p>
+          <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div>
+        </div>
+        <button class="reset-button" id="reset-button" type="button" disabled>
+          Reset game<small>Clear both wins · hide the secret</small>
+        </button>
+      </section>
+
+      <p class="status-message" id="status-message" role="status" aria-live="polite">Starting a new game…</p>
+
+      <section class="target-section" aria-labelledby="target-title">
+        <div class="target-heading">
+          <div>
+            <p class="eyebrow">Choose a target</p>
+            <h2 id="target-title">Same sponge, different limits</h2>
+          </div>
+          <code>P(S) = SPN_encrypt(key=000102…0f, plaintext=S)</code>
+        </div>
+        <div id="target-cards" class="target-cards">
+          <button id="target-hash1" class="target-card" type="button" data-hash-id="hash1" disabled>
+            <span class="target-name">Hash 1</span><b data-role="target-status">Available</b>
+            <strong>Short digest</strong>
+            <span>capacity <i data-role="capacity">13</i> · rate <i data-role="rate">3</i> · digest <i data-role="digest">3</i> bytes</span>
+          </button>
+          <button id="target-hash2" class="target-card" type="button" data-hash-id="hash2" disabled>
+            <span class="target-name">Hash 2</span><b data-role="target-status">Available</b>
+            <strong>Small capacity</strong>
+            <span>capacity <i data-role="capacity">3</i> · rate <i data-role="rate">13</i> · digest <i data-role="digest">32</i> bytes</span>
+          </button>
+        </div>
+        <p class="target-note">State: 16 zero bytes · padding: MSB-first pad10*1 · SPN rounds: 10</p>
+      </section>
+
+      <section class="protocol" aria-label="Collision game Player and Server exchange">
+        <div class="actors" aria-hidden="true">
+          <div><span>P</span><strong>Player</strong><small>You choose the messages</small></div>
+          <div></div>
+          <div><span>S</span><strong>Server</strong><small>Uses the selected fixed hash</small></div>
+        </div>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">1</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Hash query · <span data-selected-name>Hash 1</span></span>
+            <h2>Explore the selected hash</h2>
+            <label for="hash-message">Message Q · hexadecimal bytes</label>
+            <textarea id="hash-message" rows="4" spellcheck="false" aria-describedby="hash-help">68656c6c6f</textarea>
+            <div class="field-meta">
+              <span id="hash-help">Empty messages are valid. Maximum: 4096 bytes.</span>
+              <span><b id="hash-count">5</b> bytes</span>
+            </div>
+            <button class="primary-button" id="hash-button" type="button" disabled>Hash message <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow request-flow" aria-hidden="true"><span>Q</span><b>→</b><span>Hash(Q)</span><b>←</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Hash response</span>
+            <h2>Absorb, then squeeze</h2>
+            <div class="formula"><span data-selected-formula>c=13 · rate=3 · digest=3</span></div>
+            <div class="digest-result" id="hash-result" hidden>
+              <span>Complete digest</span><div id="hash-output" class="digest-groups"></div>
+            </div>
+            <p id="hash-server-status">Waiting for a hash query.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">2</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Collision attempt · <span data-selected-name>Hash 1</span></span>
+            <h2>Submit two different messages</h2>
+            <label for="left-message">Left message · hexadecimal bytes</label>
+            <textarea id="left-message" rows="4" spellcheck="false" aria-describedby="left-help">00</textarea>
+            <div class="field-meta"><span id="left-help">Maximum: 4096 bytes.</span><span><b id="left-count">1</b> bytes</span></div>
+            <label for="right-message">Right message · hexadecimal bytes</label>
+            <textarea id="right-message" rows="4" spellcheck="false" aria-describedby="right-help">01</textarea>
+            <div class="field-meta"><span id="right-help">Must differ from the decoded left message.</span><span><b id="right-count">1</b> bytes</span></div>
+            <button class="primary-button collision-button" id="collision-button" type="button" disabled>Submit collision <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow single-flow" aria-hidden="true"><span>M₀, M₁</span><b>→</b></div>
+          <section class="node server-node compact-node result-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Verification</span>
+            <h2>Compare the complete digests</h2>
+            <div class="result-indicator" id="result-indicator">Awaiting a collision</div>
+            <div class="digest-result" id="collision-result" hidden>
+              <span>Left digest</span><div id="left-output" class="digest-groups"></div>
+              <span class="second-digest-label">Right digest</span><div id="right-output" class="digest-groups"></div>
+            </div>
+            <p id="collision-server-status">A valid collision solves this target.</p>
+          </section>
+        </article>
+      </section>
+
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span>2 / 2</span>
+        <div><h2 id="victory-title">Both hashes broken</h2><p>The Server returned its startup secret.</p></div>
+        <code id="secret-output"></code>
+      </section>
+    </main>
+    <footer><span>CS4236 · Week 05</span><span>Two collisions · one revealed secret</span></footer>
+  </body>
+</html>
