@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Analyze an encrypt-then-MAC construction in an IND-CCA2 game.">
+    <title>ETM · IND-CCA2 Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="IND-CCA2 game home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span><strong>ETM Challenge</strong><small>Chosen-ciphertext experiment</small></span>
+      </a>
+      <span class="week-label">CS4236 · Week 06</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Week 06 · IND-CCA2 game</p>
+          <h1 id="page-title">Distinguish the hidden<br>plaintext.</h1>
+          <p>Choose two messages, inspect the challenge tuple, and use the
+            available oracles to determine which message the Server encrypted.</p>
+        </div>
+        <aside class="game-state" aria-label="Current game">
+          <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+          <div>
+            <small id="connection-label">Connecting</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">Cipher suite pending</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="restriction" aria-labelledby="restriction-title">
+        <div class="restriction-symbol" aria-hidden="true">≠</div>
+        <div>
+          <h2 id="restriction-title">The exact challenge is forbidden</h2>
+          <p>The decryption oracle accepts any other well-formed tuple. Use
+            permitted queries to gather evidence about the hidden choice.</p>
+        </div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="run-score"><span>Win streak</span><strong><span id="wins">0</span><small> / <span id="wins-required">30</span></small></strong></div>
+        <div class="run-progress">
+          <h2 id="run-title">Reach 30 consecutive correct guesses</h2>
+          <p>A wrong guess resets the streak. Resetting the round keeps it.</p>
+          <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div>
+        </div>
+        <button class="reset-button" id="reset-button" type="button" disabled>
+          Reset round<small>Fresh key · preserve win streak</small>
+        </button>
+      </section>
+      <p class="status-message" id="status-message" role="status" aria-live="polite">Starting a game…</p>
+
+      <section class="construction" aria-labelledby="construction-title">
+        <div class="construction-icon" aria-hidden="true">7</div>
+        <div>
+          <p class="eyebrow">Challenge authenticator</p>
+          <h2 id="construction-title">Hash the ciphertext before CMAC</h2>
+          <p>Pad AD to one block for CMAC, then chain the ciphertext from H<sub>0</sub> = 0. Zero-fill only a final partial ciphertext block.</p>
+        </div>
+        <div class="formula"><span>H<sub>0</sub> = 0</span><span>H<sub>i+1</sub> = 7H<sub>i</sub> + C<sub>i</sub> mod 2<sup>128</sup></span><b>tag = CMAC(K<sub>mac</sub>, IV || AD′ || H)</b></div>
+      </section>
+
+      <section class="protocol" aria-label="Player and Server exchange">
+        <div class="actors" aria-hidden="true">
+          <div><span>P</span><strong>Player</strong><small>You control every public byte</small></div>
+          <div></div>
+          <div><span>S</span><strong>Server</strong><small>Holds CTR and CMAC keys</small></div>
+        </div>
+
+        <article class="exchange optional-step">
+          <div class="step-number" aria-hidden="true">0</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Optional · encryption oracle</span>
+            <h2>Inspect an ETM output</h2>
+            <label for="encrypt-message">Plaintext · hexadecimal bytes</label>
+            <textarea id="encrypt-message" rows="3" spellcheck="false">68656c6c6f</textarea>
+            <div class="field-meta"><span>May be empty. Maximum 4096 bytes.</span><span><b id="encrypt-count">5</b> bytes</span></div>
+            <label for="encrypt-ad">Associated data · 0–15 bytes</label>
+            <textarea id="encrypt-ad" rows="2" spellcheck="false">00112233445566778899aabbccddee</textarea>
+            <div class="field-meta"><span>10*-padded for authentication and returned unchanged.</span><span><b id="encrypt-ad-count">15</b> bytes</span></div>
+            <button class="primary-button" id="encrypt-button" type="button" disabled>Encrypt with oracle <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow request-flow" aria-hidden="true"><span>P, AD</span><b>→</b><span>IV, AD, C, T</span><b>←</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Fresh IV · same round key</span>
+            <h2>Encrypt, hash, authenticate</h2>
+            <div class="aead-result" id="encrypt-result" hidden>
+              <div><b>IV</b><code id="encrypt-iv-output"></code></div>
+              <div><b>AD</b><code id="encrypt-ad-output"></code></div>
+              <div><b>C</b><div class="byte-groups" id="encrypt-ciphertext-output"></div></div>
+              <div><b>T</b><code id="encrypt-tag-output"></code></div>
+            </div>
+            <p id="encrypt-server-status">Waiting for an optional encryption query.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">1</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Challenge selection</span>
+            <h2>Choose two messages</h2>
+            <div class="candidate-fields">
+              <div>
+                <label for="left-message">Message 0 · left</label>
+                <textarea id="left-message" rows="3" spellcheck="false">546865206c656674206d657373616765</textarea>
+                <span><b id="left-count">16</b> bytes</span>
+              </div>
+              <div>
+                <label for="right-message">Message 1 · right</label>
+                <textarea id="right-message" rows="3" spellcheck="false">526967687420736964652077696e7321</textarea>
+                <span><b id="right-count">16</b> bytes</span>
+              </div>
+            </div>
+            <label for="challenge-ad">Associated data · 0–15 bytes</label>
+            <textarea id="challenge-ad" rows="2" spellcheck="false">00112233445566778899aabbccddee</textarea>
+            <div class="field-meta"><span>The same padded AD block applies to either candidate.</span><span><b id="challenge-ad-count">15</b> bytes</span></div>
+            <button class="primary-button" id="challenge-button" type="button" disabled>Create challenge <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow single-flow" aria-hidden="true"><span>P<sub>0</sub>, P<sub>1</sub>, AD</span><b>→</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Hidden choice b ∈ {0, 1}</span>
+            <h2>Challenge tuple</h2>
+            <div class="aead-result" id="challenge-result" hidden>
+              <div><b>IV</b><code id="challenge-iv-output"></code></div>
+              <div><b>AD</b><code id="challenge-ad-output"></code></div>
+              <div><b>C</b><div class="byte-groups" id="challenge-ciphertext-output"></div></div>
+              <div><b>T</b><code id="challenge-tag-output"></code></div>
+            </div>
+            <p id="challenge-server-status">Waiting for two distinct, equal-length candidates.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">2</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Chosen-ciphertext query</span>
+            <h2>Submit a different tuple</h2>
+            <p class="field-help">Challenge values are copied here. Change at least one decoded component before submitting.</p>
+            <label for="decrypt-iv">IV · 8 bytes</label>
+            <textarea id="decrypt-iv" rows="2" spellcheck="false"></textarea>
+            <label for="decrypt-ad">Associated data · 0–15 bytes</label>
+            <textarea id="decrypt-ad" rows="2" spellcheck="false"></textarea>
+            <label for="decrypt-ciphertext">Ciphertext · hexadecimal bytes</label>
+            <textarea id="decrypt-ciphertext" rows="4" spellcheck="false"></textarea>
+            <div class="field-meta"><span>The exact challenge tuple is rejected.</span><span><b id="decrypt-ciphertext-count">—</b> bytes</span></div>
+            <label for="decrypt-tag">Tag · 16 bytes</label>
+            <textarea id="decrypt-tag" rows="2" spellcheck="false"></textarea>
+            <button class="primary-button" id="decrypt-button" type="button" disabled>Ask decryption oracle <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow request-flow" aria-hidden="true"><span>IV′, AD′, C′, T′</span><b>→</b><span>valid, P′</span><b>←</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Authenticate before decrypting</span>
+            <h2>Oracle response</h2>
+            <div class="result-indicator" id="decrypt-indicator">Awaiting a modified tuple</div>
+            <div class="plaintext-result" id="decrypt-result" hidden>
+              <span>Recovered plaintext</span>
+              <div class="byte-groups" id="plaintext-output"></div>
+            </div>
+            <p id="decrypt-server-status">A valid tuple returns the complete plaintext.</p>
+          </section>
+        </article>
+
+        <article class="exchange guess-exchange">
+          <div class="step-number" aria-hidden="true">3</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Final decision</span>
+            <h2>Which message was encrypted?</h2>
+            <div class="guess-buttons">
+              <button class="guess-button" type="button" data-guess="0" disabled><b>0</b> Left message</button>
+              <button class="guess-button" type="button" data-guess="1" disabled><b>1</b> Right message</button>
+            </div>
+          </section>
+          <div class="flow single-flow" aria-hidden="true"><span>guess b</span><b>→</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Round result</span>
+            <h2>Protect the streak</h2>
+            <div class="result-indicator" id="guess-indicator">Awaiting a challenge</div>
+            <p>Every guess ends this round and replaces the secret key.</p>
+          </section>
+        </article>
+      </section>
+
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span>30 / 30</span>
+        <div><h2 id="victory-title">CCA game complete</h2><p>The Server returned its startup secret.</p></div>
+        <code id="secret-output"></code>
+      </section>
+    </main>
+    <footer><span>CS4236 · Week 06</span><span>Thirty chosen-ciphertext wins unlock the secret</span></footer>
+  </body>
+</html>
