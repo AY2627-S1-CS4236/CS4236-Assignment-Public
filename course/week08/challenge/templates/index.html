@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Analyze an ElGamal public-key encryption scheme in an IND-CPA game.">
+    <title>ElGamal · IND-CPA Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="ElGamal game home">
+        <span class="brand-mark" aria-hidden="true">D</span>
+        <span><strong>ElGamal Challenge</strong><small>Public-key experiment</small></span>
+      </a>
+      <span class="week-label">CS4236 · Week 08</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Week 08 · IND-CPA game</p>
+          <h1 id="page-title">Distinguish the hidden<br>number.</h1>
+          <p>Choose two integers, inspect the ElGamal ciphertext, and decide which
+            one the Server encrypted under its public key.</p>
+        </div>
+        <aside class="game-state" aria-label="Current game">
+          <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+          <div>
+            <small id="connection-label">Connecting</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">Cipher suite pending</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="restriction" aria-labelledby="restriction-title">
+        <div class="restriction-symbol" aria-hidden="true">≠</div>
+        <div>
+          <h2 id="restriction-title">Choose two distinct numbers</h2>
+          <p>Each candidate must be between 1 and p − 1. Public-key encryption
+            can be computed locally from p, g, and h.</p>
+        </div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="run-score"><span>Win streak</span><strong><span id="wins">0</span><small> / <span id="wins-required">30</span></small></strong></div>
+        <div class="run-progress">
+          <h2 id="run-title">Reach 30 consecutive correct guesses</h2>
+          <p>A wrong guess resets the streak. Resetting the round keeps it.</p>
+          <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div>
+        </div>
+        <button class="reset-button" id="reset-button" type="button" disabled>
+          Reset round<small>Fresh private key · preserve win streak</small>
+        </button>
+      </section>
+      <p class="status-message" id="status-message" role="status" aria-live="polite">Starting a game…</p>
+
+      <section class="construction" aria-labelledby="construction-title">
+        <div class="construction-icon" aria-hidden="true">g</div>
+        <div>
+          <p class="eyebrow">Public group · fixed for this game</p>
+          <h2 id="construction-title">The current ElGamal key</h2>
+          <p>The private exponent changes after every guess. The prime and generator remain fixed.</p>
+        </div>
+        <dl class="public-values">
+          <div><dt>p · prime</dt><dd><code id="prime">—</code></dd></div>
+          <div><dt>g · generator</dt><dd><code id="generator">—</code></dd></div>
+          <div><dt>h · public key</dt><dd><code id="public-key">—</code></dd></div>
+        </dl>
+      </section>
+
+      <section class="protocol" aria-label="Player and Server exchange">
+        <div class="actors" aria-hidden="true">
+          <div><span>P</span><strong>Player</strong><small>You choose both candidates</small></div>
+          <div></div>
+          <div><span>S</span><strong>Server</strong><small>Holds the private exponent</small></div>
+        </div>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">1</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Challenge selection</span>
+            <h2>Choose two numbers</h2>
+            <div class="candidate-fields">
+              <div>
+                <label for="left-message">Message 0 · left</label>
+                <input id="left-message" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" value="7" aria-describedby="candidate-help">
+              </div>
+              <div>
+                <label for="right-message">Message 1 · right</label>
+                <input id="right-message" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" value="11" aria-describedby="candidate-help">
+              </div>
+            </div>
+            <p class="field-help" id="candidate-help">Enter decimal integers between 1 and p − 1. They must differ.</p>
+            <button class="primary-button" id="challenge-button" type="button" disabled>Create challenge <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow single-flow" aria-hidden="true"><span>m₀, m₁</span><b>→</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Hidden choice b ∈ {0, 1}</span>
+            <h2>Challenge ciphertext</h2>
+            <div class="cipher-result" id="challenge-result" hidden>
+              <div><b>c₁</b><code id="challenge-c1"></code></div>
+              <div><b>c₂</b><code id="challenge-c2"></code></div>
+            </div>
+            <p id="challenge-server-status">Waiting for two distinct integers.</p>
+          </section>
+        </article>
+
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">2</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p>
+            <span class="node-label">Final decision</span>
+            <h2>Which number was encrypted?</h2>
+            <div class="guess-buttons">
+              <button class="guess-button" type="button" data-guess="0" disabled><b>0</b> Left number</button>
+              <button class="guess-button" type="button" data-guess="1" disabled><b>1</b> Right number</button>
+            </div>
+          </section>
+          <div class="flow single-flow" aria-hidden="true"><span>guess b</span><b>→</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p>
+            <span class="node-label">Round result</span>
+            <h2>Protect the streak</h2>
+            <div class="result-indicator" id="guess-indicator">Awaiting a challenge</div>
+            <p>Every guess ends this round and creates a fresh public key.</p>
+          </section>
+        </article>
+      </section>
+
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span>30 / 30</span>
+        <div><h2 id="victory-title">CPA game complete</h2><p>The Server returned its startup secret.</p></div>
+        <code id="secret-output"></code>
+      </section>
+    </main>
+    <footer><span>CS4236 · Week 08</span><span>Thirty ElGamal guesses unlock the secret</span></footer>
+  </body>
+</html>
