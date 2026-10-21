@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A Schnorr signature EUF-CMA game for CS4236 Week 10.">
+    <title>Schnorr Signature Challenge</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Schnorr challenge home">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span><strong>Schnorr Challenge</strong><small>Digital signature experiment</small></span>
+      </a>
+      <span class="week-label">CS4236 · Week 10</span>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Week 10 · EUF-CMA game</p>
+          <h1 id="page-title">Sign what the Server<br>never signed.</h1>
+          <p>Request signatures on messages of your choice, then produce a valid
+            Schnorr signature for one fresh message.</p>
+        </div>
+        <aside class="game-state" aria-label="Current game">
+          <span id="connection-dot" class="connection-dot" aria-hidden="true"></span>
+          <div><small id="connection-label">Connecting</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">Signature suite pending</span></div>
+        </aside>
+      </section>
+
+      <section class="restriction" aria-labelledby="restriction-title">
+        <span class="restriction-symbol" aria-hidden="true">✦</span>
+        <div><h2 id="restriction-title">One fresh message. One valid signature.</h2>
+          <p>The forged message must never have been queried under the current key.
+            Repeated oracle queries are allowed. There is no query limit.</p></div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="run-score"><span>Objective</span>
+          <strong><span id="wins">0</span><small> / <span id="wins-required">1</span></small></strong></div>
+        <div class="run-progress"><h2 id="run-title">Produce one fresh-message forgery</h2>
+          <p>A failed attempt starts a fresh key, nonce sequence, and query history.</p>
+          <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div></div>
+        <button class="reset-button" id="reset-button" type="button" disabled>Reset game
+          <small>Fresh key and nonce · clear query history</small></button>
+      </section>
+      <p class="status-message" id="status-message" role="status" aria-live="polite">Starting a new game…</p>
+
+      <section class="construction" aria-labelledby="instance-title">
+        <span class="construction-icon" aria-hidden="true">g</span>
+        <div><p class="eyebrow">Public group · current signing key</p>
+          <h2 id="instance-title">One key. An advancing nonce.</h2>
+          <p>The Server samples k once at the start of this instance. Each signature
+            uses the current k, then updates k ← (k + 10) mod q.</p></div>
+        <dl class="public-values">
+          <div><dt>p · prime</dt><dd><code id="prime">Waiting for the Server…</code></dd></div>
+          <div><dt>q · group order</dt><dd><code id="group-order">—</code></dd></div>
+          <div><dt>g · generator</dt><dd><code id="generator">—</code></dd></div>
+          <div><dt>y · public key</dt><dd><code id="public-key">—</code></dd></div>
+        </dl>
+      </section>
+
+      <section class="protocol" aria-label="EUF-CMA Player and Server exchanges">
+        <div class="actors" aria-hidden="true">
+          <div><span>P</span><strong>Player</strong><small>You choose the messages</small></div><div></div>
+          <div><span>S</span><strong>Server</strong><small>Holds the signing key and nonce</small></div>
+        </div>
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">1</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p><span class="node-label">Signing oracle</span>
+            <h2>Collect signatures of your choice</h2>
+            <label for="oracle-message">Message M · hexadecimal bytes</label>
+            <textarea id="oracle-message" rows="4" spellcheck="false" aria-describedby="oracle-help"></textarea>
+            <p class="field-help" id="oracle-help">Empty messages are valid. Maximum: 4096 bytes.
+              <span id="oracle-count">0</span> bytes entered.</p>
+            <button class="primary-button" id="oracle-button" type="button" disabled>Request signature <span aria-hidden="true">→</span></button>
+            <p class="field-help">Every successful request advances the nonce, even when the message repeats.</p>
+          </section>
+          <div class="flow request-flow" aria-hidden="true"><span>M</span><b>→</b><span>(R, s)</span><b>←</b></div>
+          <section class="node server-node">
+            <p class="mobile-actor">Server</p><span class="node-label">Signature transcript</span>
+            <h2>Sign with the current nonce</h2>
+            <div class="formula">R = g<sup>k</sup> mod p<br>s = (k + r·x) mod q</div>
+            <p id="oracle-server-status" role="status">Waiting for a signing query.</p>
+            <p class="field-help"><b id="query-count">0</b> signatures in this instance.</p>
+            <ol class="transcript" id="transcript" aria-label="Signatures returned in the current instance"></ol>
+          </section>
+        </article>
+        <article class="exchange">
+          <div class="step-number" aria-hidden="true">2</div>
+          <section class="node player-node">
+            <p class="mobile-actor">Player</p><span class="node-label">Forgery</span>
+            <h2>Submit a fresh message and signature</h2>
+            <label for="forge-message">Fresh message M* · hexadecimal bytes</label>
+            <textarea id="forge-message" rows="3" spellcheck="false" aria-describedby="forge-help"></textarea>
+            <p class="field-help" id="forge-help">This exact message must not have been queried.
+              <span id="forge-count">0</span> bytes entered.</p>
+            <label for="forge-r">Commitment R* · decimal integer</label>
+            <input id="forge-r" type="text" inputmode="numeric" autocomplete="off" spellcheck="false">
+            <label for="forge-s">Response s* · decimal integer</label>
+            <input id="forge-s" type="text" inputmode="numeric" autocomplete="off" spellcheck="false">
+            <button class="primary-button forge-button" id="forge-button" type="button" disabled>Submit forgery <span aria-hidden="true">→</span></button>
+          </section>
+          <div class="flow single-flow" aria-hidden="true"><span>M*, R*, s*</span><b>→</b></div>
+          <section class="node server-node compact-node">
+            <p class="mobile-actor">Server</p><span class="node-label">Verification</span>
+            <h2>Check validity and freshness</h2>
+            <div class="formula">g<sup>s*</sup> = R* · y<sup>r*</sup> mod p</div>
+            <p class="field-help">r* is the Week 5 sponge hash of the fixed-width commitment
+              followed by the message, reduced modulo q. See the assignment for the exact encoding.</p>
+            <div class="result-indicator" id="result-indicator">Awaiting a forgery</div>
+            <p id="forge-server-status">A valid signature on a fresh message completes the game.</p>
+          </section>
+        </article>
+      </section>
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span>1 / 1</span><div><h2 id="victory-title">Forgery experiment complete</h2>
+          <p>The Server revealed its startup secret.</p></div><code id="secret-output"></code>
+      </section>
+    </main>
+    <footer><span>CS4236 · Week 10</span><span>EUF-CMA · chosen-message queries, one fresh-message forgery</span></footer>
+  </body>
+</html>
