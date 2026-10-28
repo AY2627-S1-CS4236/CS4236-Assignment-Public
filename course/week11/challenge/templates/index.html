@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="CS4236 Week 11 PKI relay challenge.">
+    <title>Interception Lab · CS4236 Week 11</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Interception Lab home">
+        <span class="brand-mark" aria-hidden="true">↔</span>
+        <span><strong>Interception Lab</strong><small>Authenticated key exchange</small></span>
+      </a>
+      <span class="week-label">CS4236 · WEEK 11</span>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">PKI · Active interception</p>
+          <h1 id="page-title">One client session.<br><em>Two messages.</em></h1>
+          <p>Relay messages between the Client and real Server. The Client sends both protected messages in the same session; identify the second.</p>
+        </div>
+        <aside class="connection-card" aria-label="Current game">
+          <span class="connection-dot" id="connection-dot" aria-hidden="true"></span>
+          <div>
+            <small id="connection-label">Connecting to the lab</small>
+            <code id="game-id">Opening game…</code>
+            <span id="suite-name">Protocol pending</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="rule-callout" aria-labelledby="rule-title">
+        <span class="callout-icon" aria-hidden="true">!</span>
+        <div>
+          <h2 id="rule-title">The root CA signing key is compromised.</h2>
+          <p>You control messages in transit. Your relay to the real Server uses another connection, while the Client's two messages stay in one session. A failed attempt opens a new exchange.</p>
+        </div>
+      </section>
+
+      <section class="run-controls" aria-labelledby="run-title">
+        <div class="score"><span>Objective</span><strong><span id="wins">0</span><small> / <span id="wins-required">1</span></small></strong></div>
+        <div class="run-progress">
+          <h2 id="run-title">Recover the second client message</h2>
+          <p id="stage-description">Waiting for a new game.</p>
+          <div class="progress-track" aria-hidden="true"><div id="progress-fill"></div></div>
+          <div class="progress-labels"><span>Handshake</span><span>Client message</span><span>Server reply</span><span>Answer</span></div>
+        </div>
+        <button class="reset-button" id="reset-button" type="button" disabled>Reset game <small>Fresh server key and messages</small></button>
+      </section>
+      <p class="status-message" id="status-message" role="status" aria-live="polite">Starting a new game…</p>
+
+      <section class="instance" aria-labelledby="instance-title">
+        <div class="instance-heading">
+          <span class="instance-icon" aria-hidden="true">g</span>
+          <div><p class="eyebrow">Current game instance</p><h2 id="instance-title">The group, root CA, and server certificate</h2>
+            <p>The root CA signs this server certificate. Its signing exponent is disclosed; the Server's signing key and endpoint DH exponents remain private. Values remain exact decimal strings.</p></div>
+        </div>
+        <div class="instance-grid">
+          <section class="value-card"><h3>FFDHE group</h3>
+            <dl><div><dt>Group ID</dt><dd><code id="group-id">—</code></dd></div><div><dt>Generator g</dt><dd><code id="group-g">—</code></dd></div>
+              <div><dt>Prime p</dt><dd><code id="group-p">—</code></dd></div><div><dt>Order q</dt><dd><code id="group-q">—</code></dd></div></dl>
+          </section>
+          <section class="value-card"><h3>Trusted root public key and server certificate</h3>
+            <pre id="certificate-details">Waiting for the Server…</pre></section>
+          <section class="value-card key-card"><h3>Disclosed root CA signing key</h3>
+            <p>Available to the Player in this game.</p><code id="signing-key">—</code></section>
+        </div>
+      </section>
+
+      <section class="protocol" aria-label="Client, Player, and Server exchanges">
+        <div class="actors" aria-hidden="true">
+          <div><span>C</span><strong>Client</strong><small>Sends both messages in one session</small></div>
+          <div><span>P</span><strong>Player / MITM</strong><small>Controls the relay</small></div>
+          <div><span>S</span><strong>Server</strong><small>Replies to the first message</small></div>
+        </div>
+
+        <article class="exchange" data-stage="server_hello">
+          <div class="step-number" aria-hidden="true">1</div>
+          <div class="exchange-main">
+            <div class="exchange-title"><span>Handshake · client to server</span><h2>Deliver a ClientHello</h2>
+              <p>The client's hello is visible. You may deliver a different one to the real server.</p></div>
+            <div class="exchange-columns">
+              <div class="message-panel"><h3>Intercepted ClientHello</h3><pre id="client-hello">Waiting for the Client…</pre></div>
+              <div class="editor-panel"><label for="server-hello-input">ClientHello delivered to Server · JSON</label>
+                <textarea id="server-hello-input" rows="9" spellcheck="false"></textarea>
+                <button id="server-hello-button" class="primary-button" type="button" disabled>Contact Server <span aria-hidden="true">→</span></button></div>
+              <div class="message-panel"><h3>Server response</h3><pre id="server-response-output">Waiting for the Player…</pre></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="exchange" data-stage="client_accept">
+          <div class="step-number" aria-hidden="true">2</div>
+          <div class="exchange-main">
+            <div class="exchange-title"><span>Handshake · server to client</span><h2>Deliver a server response</h2>
+              <p>The Server signs its fresh key share and sends it with its root-signed certificate.</p></div>
+            <div class="exchange-columns">
+              <div class="message-panel"><h3>Real Server response</h3><pre id="real-server-response">Complete step 1 first.</pre></div>
+              <div class="editor-panel"><label for="client-accept-input">Response delivered to Client · JSON</label>
+                <textarea id="client-accept-input" rows="9" spellcheck="false"></textarea>
+                <button id="client-accept-button" class="primary-button" type="button" disabled>Contact Client <span aria-hidden="true">→</span></button></div>
+              <div class="message-panel"><h3>First client record</h3><pre id="first-client-record">Waiting for the Client…</pre></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="exchange" data-stage="relay_to_server">
+          <div class="step-number" aria-hidden="true">3</div>
+          <div class="exchange-main">
+            <div class="exchange-title"><span>Application data · client to server</span><h2>Relay the first client message</h2>
+              <p>The real Server decrypts the record you deliver and responds to its plaintext.</p></div>
+            <div class="exchange-columns">
+              <div class="message-panel"><h3>Client record</h3><pre id="client-record-output">Complete step 2 first.</pre></div>
+              <div class="editor-panel"><label for="relay-to-server-input">Record delivered to Server · JSON</label>
+                <textarea id="relay-to-server-input" rows="7" spellcheck="false"></textarea>
+                <button id="relay-to-server-button" class="primary-button" type="button" disabled>Relay to Server <span aria-hidden="true">→</span></button></div>
+              <div class="message-panel"><h3>Server record</h3><pre id="first-server-record">Waiting for the Server…</pre></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="exchange" data-stage="relay_to_client">
+          <div class="step-number" aria-hidden="true">4</div>
+          <div class="exchange-main">
+            <div class="exchange-title"><span>Application data · server to client</span><h2>Relay the server response</h2>
+              <p>The Client's second message depends on this response and uses the same session as its first.</p></div>
+            <div class="exchange-columns">
+              <div class="message-panel"><h3>Server record</h3><pre id="server-record-output">Complete step 3 first.</pre></div>
+              <div class="editor-panel"><label for="relay-to-client-input">Record delivered to Client · JSON</label>
+                <textarea id="relay-to-client-input" rows="7" spellcheck="false"></textarea>
+                <button id="relay-to-client-button" class="primary-button" type="button" disabled>Relay to Client <span aria-hidden="true">→</span></button></div>
+              <div class="message-panel"><h3>Second client record</h3><pre id="second-client-record">Waiting for the Client…</pre></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="exchange" data-stage="guess">
+          <div class="step-number" aria-hidden="true">5</div>
+          <div class="exchange-main">
+            <div class="exchange-title"><span>Final answer</span><h2>Identify the second client plaintext</h2>
+              <p>Submit its exact bytes as hexadecimal. A correct answer reveals the startup secret.</p></div>
+            <div class="guess-panel"><label for="guess-input">Second client message · hex</label>
+              <textarea id="guess-input" rows="3" spellcheck="false"></textarea>
+              <button id="guess-button" class="primary-button" type="button" disabled>Submit answer <span aria-hidden="true">→</span></button>
+              <span id="answer-result" role="status">Awaiting the second client record.</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="victory" id="victory" hidden aria-labelledby="victory-title">
+        <span aria-hidden="true">✓</span><div><p class="eyebrow">Game complete</p><h2 id="victory-title">Second message recovered.</h2>
+          <p>The exact startup secret is:</p><code id="secret-output"></code></div>
+      </section>
+    </main>
+    <footer><strong>CS4236 · Week 11</strong><span>An educational protocol built from the course library.</span></footer>
+  </body>
+</html>
